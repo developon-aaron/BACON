@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BACON 융프</title>
+<style>
+  :root{
+    --felt:#1f3f37;
+    --felt-2:#27483f;
+    --panel:#2f5447;
+    --panel-line:#3c6657;
+    --card:#f4eee0;
+    --card-edge:#e3dac6;
+    --ink:#21302b;
+    --ink-soft:#5a6b63;
+    --gold:#caa24a;
+    --cream:#f4eee0;
+
+    --money:#cf9b3a;
+    --health:#cf5b54;
+    --wellbeing:#5aa56f;
+    --social:#5a83c4;
+    --knowledge:#8264c0;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;}
+  body{
+    background:
+      radial-gradient(120% 90% at 50% 0%, var(--felt-2), var(--felt) 70%);
+    color:var(--cream);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100%;
+  }
+  h1,h2,h3{font-family:Georgia,"Times New Roman",serif;font-weight:600;margin:0;}
+  button{font-family:inherit;cursor:pointer;}
+  .hidden{display:none !important;}
+
+  /* ---------- SETUP ---------- */
+  #setup{max-width:760px;margin:0 auto;padding:48px 20px 80px;}
+  #setup h1{font-size:30px;letter-spacing:.5px;}
+  #setup .sub{color:#cfe0d8;margin:8px 0 28px;font-size:14px;line-height:1.5;}
+  .count-row{display:flex;gap:10px;align-items:center;margin-bottom:22px;}
+  .count-row .seg{display:flex;border:1px solid var(--panel-line);border-radius:10px;overflow:hidden;}
+  .count-row .seg button{
+    background:transparent;color:var(--cream);border:0;padding:9px 16px;font-size:15px;
+  }
+  .count-row .seg button.on{background:var(--gold);color:#221c0c;font-weight:700;}
+  .pcard{
+    background:var(--panel);border:1px solid var(--panel-line);border-radius:14px;
+    padding:16px 18px;margin-bottom:14px;
+  }
+  .pcard h3{font-size:16px;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+  .pcard h3 input{
+    background:var(--felt-2);border:1px solid var(--panel-line);color:var(--cream);
+    border-radius:7px;padding:6px 10px;font-size:14px;font-family:inherit;width:160px;
+  }
+  .cond-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+  .cond label{display:block;font-size:11px;letter-spacing:.4px;text-transform:uppercase;color:#bcd0c7;margin-bottom:5px;}
+  .cond select{
+    width:100%;background:var(--felt-2);border:1px solid var(--panel-line);color:var(--cream);
+    border-radius:8px;padding:8px 10px;font-size:14px;font-family:inherit;
+  }
+  .start-btn{
+    margin-top:18px;width:100%;background:var(--gold);color:#221c0c;border:0;
+    padding:15px;border-radius:12px;font-size:17px;font-weight:700;letter-spacing:.5px;
+  }
+  .note{font-size:12px;color:#9fb6ac;margin-top:10px;line-height:1.5;}
+
+  /* ---------- BOARD ---------- */
+  #game{padding:14px 16px 30px;max-width:1180px;margin:0 auto;}
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+    background:var(--panel);border:1px solid var(--panel-line);border-radius:12px;
+    padding:10px 16px;margin-bottom:14px;flex-wrap:wrap;
+  }
+  .topbar .stage{font-family:Georgia,serif;font-size:18px;}
+  .topbar .stage small{display:block;font-size:11px;color:#bcd0c7;letter-spacing:1px;text-transform:uppercase;font-family:system-ui;}
+  .turn-of{display:flex;align-items:center;gap:9px;font-size:14px;}
+  .turn-dot{width:11px;height:11px;border-radius:50%;}
+  .nextbtn{
+    background:var(--gold);color:#221c0c;border:0;border-radius:10px;padding:11px 22px;
+    font-size:15px;font-weight:700;letter-spacing:.3px;
+  }
+  .nextbtn:disabled{opacity:.4;cursor:not-allowed;}
+
+  .layout{display:grid;grid-template-columns:1fr 300px;gap:14px;align-items:start;}
+  @media(max-width:880px){.layout{grid-template-columns:1fr;}}
+
+  .board-col{display:flex;flex-direction:column;gap:12px;}
+  .milestones,.tier,.bottom{
+    background:var(--panel);border:1px solid var(--panel-line);border-radius:12px;padding:12px;
+  }
+  .row-head{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#bcd0c7;margin-bottom:9px;display:flex;justify-content:space-between;}
+  .row-head .deck-count{color:#90a89e;}
+
+  .card-strip{display:flex;gap:10px;flex-wrap:wrap;}
+
+  /* scenario / milestone cards */
+  .gcard{
+    width:118px;min-height:120px;background:var(--card);color:var(--ink);
+    border-radius:10px;border:1px solid var(--card-edge);
+    box-shadow:0 2px 0 rgba(0,0,0,.18);
+    padding:9px;display:flex;flex-direction:column;gap:6px;position:relative;
+    transition:transform .08s ease, box-shadow .08s ease;
+  }
+  .gcard .ttl{font-size:12px;font-weight:700;line-height:1.25;min-height:30px;}
+  .gcard .bonus{font-size:11px;color:var(--ink-soft);display:flex;align-items:center;gap:5px;margin-top:auto;}
+  .gcard .cost{display:flex;flex-wrap:wrap;gap:4px;}
+  .pip{
+    display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:700;
+    padding:2px 6px;border-radius:20px;background:#efe7d4;border:1px solid #ddd2ba;
+  }
+  .pip .dot{width:9px;height:9px;border-radius:50%;}
+  .gcard.affordable{cursor:pointer;}
+  .gcard.affordable:hover{transform:translateY(-3px);box-shadow:0 6px 12px rgba(0,0,0,.28);}
+  .gcard.locked{opacity:.55;}
+  .gcard .pts{
+    position:absolute;top:7px;right:8px;font-family:Georgia,serif;font-weight:700;font-size:20px;color:var(--gold);
+  }
+  .gcard .bonus-badge{
+    position:absolute;top:7px;right:8px;width:20px;height:20px;border-radius:50%;border:2px solid #fff;
+  }
+  .empty-slot{
+    width:118px;min-height:120px;border:1px dashed var(--panel-line);border-radius:10px;
+    display:flex;align-items:center;justify-content:center;color:#6f8a80;font-size:11px;text-align:center;padding:8px;
+  }
+
+  /* token pool */
+  .bottom{display:flex;gap:22px;align-items:center;flex-wrap:wrap;}
+  .pool{display:flex;gap:10px;flex-wrap:wrap;}
+  .token{
+    width:60px;height:74px;border-radius:11px;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:2px;color:#fff;border:2px solid rgba(255,255,255,.25);
+    font-weight:700;user-select:none;position:relative;
+  }
+  .token .lab{font-size:9px;font-weight:600;opacity:.9;letter-spacing:.3px;}
+  .token .cnt{font-size:22px;font-family:Georgia,serif;line-height:1;}
+  .token.pick{cursor:pointer;}
+  .token.pick:hover{outline:3px solid #fff;}
+  .token.sel{outline:3px solid var(--gold);}
+  .token.dim{opacity:.3;pointer-events:none;}
+
+  /* action bar */
+  .actions{
+    background:var(--panel);border:1px solid var(--panel-line);border-radius:12px;padding:12px;
+  }
+  .actions h3{font-size:13px;letter-spacing:1px;text-transform:uppercase;color:#bcd0c7;font-family:system-ui;margin-bottom:10px;}
+  .act-btn{
+    display:block;width:100%;text-align:left;background:var(--felt-2);color:var(--cream);
+    border:1px solid var(--panel-line);border-radius:10px;padding:11px 13px;margin-bottom:8px;font-size:14px;
+  }
+  .act-btn:hover{border-color:var(--gold);}
+  .act-btn.active{border-color:var(--gold);background:#34604f;}
+  .act-btn small{display:block;color:#9fb6ac;font-size:11px;margin-top:2px;}
+  .confirm-row{display:flex;gap:8px;margin-top:4px;}
+  .confirm-row button{flex:1;border-radius:9px;padding:10px;font-size:13px;font-weight:700;border:0;}
+  .btn-go{background:var(--gold);color:#221c0c;}
+  .btn-cancel{background:#3c4f48;color:var(--cream);}
+  .hint{font-size:12px;color:#aec3ba;margin:6px 0 4px;line-height:1.45;min-height:16px;}
+
+  /* players panel */
+  .players{display:flex;flex-direction:column;gap:10px;}
+  .pl{
+    background:var(--panel);border:1px solid var(--panel-line);border-radius:12px;padding:11px 12px;
+  }
+  .pl.current{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;}
+  .pl .pl-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+  .pl .pl-name{font-weight:700;font-size:14px;display:flex;align-items:center;gap:7px;}
+  .pl .pl-score{font-family:Georgia,serif;font-size:20px;color:var(--gold);font-weight:700;}
+  .pl .conds{font-size:10px;color:#aec3ba;margin-bottom:8px;line-height:1.5;}
+  .pl .assets{display:flex;gap:5px;flex-wrap:wrap;}
+  .mini{
+    display:flex;align-items:center;gap:3px;font-size:11px;font-weight:700;
+    background:var(--felt-2);border-radius:7px;padding:3px 6px;
+  }
+  .mini .dot{width:9px;height:9px;border-radius:50%;}
+  .mini .b{color:var(--gold);font-size:9px;}
+  .pl .ms-line{font-size:10px;color:#cfe0d8;margin-top:7px;}
+
+  /* modal */
+  .modal-bg{
+    position:fixed;inset:0;background:rgba(10,20,16,.7);display:flex;align-items:center;justify-content:center;
+    z-index:50;padding:20px;
+  }
+  .modal{
+    background:var(--panel);border:1px solid var(--gold);border-radius:16px;padding:26px;max-width:480px;width:100%;
+    text-align:center;
+  }
+  .modal h2{font-size:22px;margin-bottom:6px;}
+  .modal .rc-name{font-size:18px;color:var(--gold);margin:14px 0;font-family:Georgia,serif;}
+  .modal .rc-eff{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:14px 0 20px;}
+  .modal button{background:var(--gold);color:#221c0c;border:0;border-radius:10px;padding:12px 26px;font-weight:700;font-size:15px;}
+  .eff-pill{display:flex;align-items:center;gap:5px;font-weight:700;padding:6px 11px;border-radius:20px;background:var(--felt-2);}
+  .eff-pill.pos{color:#9be3a8;}
+  .eff-pill.neg{color:#f0a09a;}
+
+  /* results */
+  .res-list{text-align:left;margin:18px 0;}
+  .res-row{display:flex;justify-content:space-between;align-items:center;padding:9px 12px;border-radius:9px;background:var(--felt-2);margin-bottom:7px;}
+  .res-row .rk{font-family:Georgia,serif;font-size:18px;color:var(--gold);width:26px;}
+  .res-row .nm{flex:1;font-size:14px;}
+  .res-row .vl{font-family:Georgia,serif;font-size:18px;}
+  .res-split{display:grid;grid-template-columns:1fr 1fr;gap:14px;text-align:left;}
+  .res-split h3{font-size:13px;letter-spacing:.5px;color:#bcd0c7;margin-bottom:10px;text-transform:uppercase;font-family:system-ui;}
+  .irony{font-size:13px;color:#e9d9a8;line-height:1.55;margin-top:18px;background:#34452f;border-radius:10px;padding:12px 14px;}
+  @media(max-width:560px){.res-split{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<!-- ============ SETUP ============ -->
+<section id="setup">
+  <h1>구조적 불평등 게임</h1>
+  <p class="sub">로컬 핫시트 프로토타입. 출발 조건이 시작 자산을 다르게 만든다. 모든 수치·카드는 임시값(placeholder)이며 밸런싱 전 골격 확인용.</p>
+
+  <div class="count-row">
+    <span style="font-size:14px;color:#cfe0d8;">플레이어 수</span>
+    <div class="seg" id="countSeg">
+      <button data-n="2">2</button>
+      <button data-n="3" class="on">3</button>
+      <button data-n="4">4</button>
+    </div>
+  </div>
+
+  <div id="playerSetups"></div>
+
+  <button class="start-btn" id="startBtn">게임 시작</button>
+  <p class="note">※ 출발 조건 → 시작 자산 매핑은 임시값입니다. 부모 경제력=돈, 장애·질환=건강 시작치에 반영. 성별·시민권은 현재 표시만 되며 게임 효과는 추후 설계.</p>
+</section>
+
+<!-- ============ GAME ============ -->
+<section id="game" class="hidden">
+  <div class="topbar">
+    <div class="stage" id="stageLabel">초년기 <small id="roundLabel">Round 1 / 15</small></div>
+    <div class="turn-of">
+      <span class="turn-dot" id="turnDot"></span>
+      <span id="turnLabel">P1 차례</span>
+    </div>
+    <button class="nextbtn" id="nextBtn" disabled>다음 차례 →</button>
+  </div>
+
+  <div class="layout">
+    <div class="board-col">
+      <!-- milestones -->
+      <div class="milestones">
+        <div class="row-head"><span>Milestones — 토큰을 소비해 점수로 환전 (개인·무제한)</span></div>
+        <div class="card-strip" id="milestoneStrip"></div>
+      </div>
+
+      <!-- tiers -->
+      <div class="tier" data-tier="3">
+        <div class="row-head"><span>장년기 시나리오</span><span class="deck-count" id="deck3"></span></div>
+        <div class="card-strip" id="tier3"></div>
+      </div>
+      <div class="tier" data-tier="2">
+        <div class="row-head"><span>중년기 시나리오</span><span class="deck-count" id="deck2"></span></div>
+        <div class="card-strip" id="tier2"></div>
+      </div>
+      <div class="tier" data-tier="1">
+        <div class="row-head"><span>초년기 시나리오</span><span class="deck-count" id="deck1"></span></div>
+        <div class="card-strip" id="tier1"></div>
+      </div>
+
+      <!-- token pool -->
+      <div class="bottom">
+        <div>
+          <div class="row-head">자산 토큰 풀</div>
+          <div class="pool" id="pool"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- right column: actions + players -->
+    <div>
+      <div class="actions">
+        <h3 id="actTitle">행동 (턴당 1회)</h3>
+        <button class="act-btn" id="actTake"><b>토큰 받기</b><small>최대 3개(서로 다른 색) 또는 같은 색 2개</small></button>
+        <button class="act-btn" id="actRandom"><b>랜덤 카드 뽑기</b><small>복권·사고 등 +/− 무작위 사건</small></button>
+        <div class="hint" id="hint"></div>
+        <div class="confirm-row hidden" id="confirmRow">
+          <button class="btn-go" id="confirmGo">확정</button>
+          <button class="btn-cancel" id="confirmCancel">취소</button>
+        </div>
+      </div>
+
+      <div style="height:12px"></div>
+      <div class="players" id="players"></div>
+    </div>
+  </div>
+</section>
+
+<!-- random card modal -->
+<div class="modal-bg hidden" id="randomModal">
+  <div class="modal">
+    <h2>랜덤 사건</h2>
+    <div class="rc-name" id="rcName"></div>
+    <div class="rc-eff" id="rcEff"></div>
+    <button id="rcClose">확인</button>
+  </div>
+</div>
+
+<!-- results modal -->
+<div class="modal-bg hidden" id="resultModal">
+  <div class="modal" style="max-width:560px;">
+    <h2>인생 종료 — 결과</h2>
+    <div class="res-split">
+      <div>
+        <h3>공식 승자 · Milestone 점수</h3>
+        <div id="resScore"></div>
+      </div>
+      <div>
+        <h3>아무도 안 챙긴 것 · Well-being 합계</h3>
+        <div id="resWell"></div>
+      </div>
+    </div>
+    <div class="irony" id="ironyText"></div>
+    <button id="restartBtn" style="margin-top:20px;">다시 시작</button>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   자산 정의
+   ========================================================= */
+const ASSETS = {
+  money:     {ko:'돈',       short:'M', color:'#cf9b3a'},
+  health:    {ko:'건강',     short:'H', color:'#cf5b54'},
+  wellbeing: {ko:'웰빙',     short:'W', color:'#5aa56f'},
+  social:    {ko:'사회자본', short:'S', color:'#5a83c4'},
+  knowledge: {ko:'지식',     short:'K', color:'#8264c0'},
+};
+const KEYS = Object.keys(ASSETS);
+const POOL_START = 7;          // 각 토큰 풀 시작 수량(임시값)
+const TOTAL_ROUNDS = 15;       // 수명
+const STAGE_LEN = 5;           // 5-5-5
+const FACEUP = 4;              // 단계별 진열 카드 수
+
+/* =========================================================
+   출발 조건 옵션
+   ========================================================= */
+const COND = {
+  econ:      {label:'부모 경제력', opts:['하','중','상']},
+  sex:       {label:'성별',        opts:['M','F','others']},
+  disability:{label:'장애·질환',   opts:['없음','있음']},
+  citizen:   {label:'시민권',      opts:['자국민','외국인']},
+};
+
+/* 조건 → 시작 자산 (전부 임시 placeholder) */
+function startingTokens(c){
+  const t = {money:1,health:2,wellbeing:1,social:1,knowledge:1};
+  if(c.econ==='중') t.money+=2;
+  if(c.econ==='상') t.money+=4;
+  if(c.disability==='있음') t.health-=1;
+  // 성별/시민권 효과는 추후 설계 — 지금은 시작치 영향 없음
+  for(const k of KEYS) t[k]=Math.max(0,t[k]);
+  return t;
+}
+
+/* =========================================================
+   임시 카드 생성기 (내용 무의미, 골격 확인용)
+   ========================================================= */
+let CID=0;
+function makeScenario(tier){
+  // 비용: tier 클수록 비쌈
+  const numTypes = 2 + (tier>=2?1:0);
+  const picks = shuffle([...KEYS]).slice(0,numTypes);
+  const cost={};
+  picks.forEach(k=> cost[k] = 1 + Math.floor(Math.random()* (1+tier)) );
+  const bonus = picks[Math.floor(Math.random()*picks.length)];
+  return {id:'S'+(CID++), tier, cost, bonus,
+          name:`시나리오 T${tier}-${CID}`};
+}
+function makeMilestone(){
+  const numTypes = 2 + Math.floor(Math.random()*2);
+  const picks = shuffle([...KEYS]).slice(0,numTypes);
+  const cost={};
+  picks.forEach(k=> cost[k] = 2 + Math.floor(Math.random()*3));
+  const points = 1 + Math.floor(Math.random()*3);
+  return {id:'M'+(CID++), cost, points, name:milestoneName()};
+}
+const MS_NAMES=['대학 학위','첫 직장','내 집 마련','결혼','은퇴','여행','창업','승진'];
+let msi=0;
+function milestoneName(){ return MS_NAMES[(msi++)%MS_NAMES.length]; }
+
+const RANDOM_NAMES_POS=['복권 3등','뜻밖의 유산','좋은 멘토','승진'];
+const RANDOM_NAMES_NEG=['교통사고','실직','번아웃','사기 피해'];
+function makeRandomCard(){
+  const good = Math.random()<0.5;
+  const k = KEYS[Math.floor(Math.random()*KEYS.length)];
+  const amt = (1+Math.floor(Math.random()*2)) * (good?1:-1);
+  const name = good ? RANDOM_NAMES_POS[Math.floor(Math.random()*RANDOM_NAMES_POS.length)]
+                    : RANDOM_NAMES_NEG[Math.floor(Math.random()*RANDOM_NAMES_NEG.length)];
+  return {name, effect:{[k]:amt}};
+}
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+/* =========================================================
+   상태
+   ========================================================= */
+let S = null;
+function newState(players){
+  const pool={}; KEYS.forEach(k=>pool[k]=POOL_START);
+  const decks={1:[],2:[],3:[]};
+  for(let t=1;t<=3;t++) for(let i=0;i<14;i++) decks[t].push(makeScenario(t));
+  const faceup={1:[],2:[],3:[]};
+  for(let t=1;t<=3;t++) for(let i=0;i<FACEUP;i++) faceup[t].push(decks[t].pop());
+  const milestones=[]; for(let i=0;i<6;i++) milestones.push(makeMilestone());
+  const randomDeck=[]; for(let i=0;i<40;i++) randomDeck.push(makeRandomCard());
+  return {
+    players, pool, decks, faceup, milestones, randomDeck,
+    round:1, cur:0, acted:false, mode:null, selection:[]
+  };
+}
+
+/* =========================================================
+   SETUP UI
+   ========================================================= */
+let playerCount=3;
+const playerSetups=document.getElementById('playerSetups');
+function renderSetup(){
+  playerSetups.innerHTML='';
+  for(let i=0;i<playerCount;i++){
+    const div=document.createElement('div');
+    div.className='pcard';
+    let condHtml='';
+    for(const [key,c] of Object.entries(COND)){
+      condHtml+=`<div class="cond"><label>${c.label}</label><select data-p="${i}" data-k="${key}">`+
+        c.opts.map((o,oi)=>`<option value="${o}" ${defaultCond(i,key)===o?'selected':''}>${o}</option>`).join('')+
+        `</select></div>`;
+    }
+    div.innerHTML=`<h3>플레이어 <input data-name="${i}" value="P${i+1}"></h3>
+      <div class="cond-grid">${condHtml}</div>`;
+    playerSetups.appendChild(div);
+  }
+}
+// 데모용으로 플레이어마다 출발 조건을 일부러 다르게 디폴트
+function defaultCond(i,key){
+  const presets=[
+    {econ:'상',sex:'M',disability:'없음',citizen:'자국민'},
+    {econ:'하',sex:'F',disability:'있음',citizen:'외국인'},
+    {econ:'중',sex:'others',disability:'없음',citizen:'자국민'},
+    {econ:'하',sex:'M',disability:'없음',citizen:'외국인'},
+  ];
+  return presets[i][key];
+}
+
+document.getElementById('countSeg').addEventListener('click',e=>{
+  if(e.target.dataset.n){
+    playerCount=+e.target.dataset.n;
+    [...e.currentTarget.children].forEach(b=>b.classList.toggle('on',b===e.target));
+    renderSetup();
+  }
+});
+renderSetup();
+
+document.getElementById('startBtn').addEventListener('click',()=>{
+  const players=[];
+  for(let i=0;i<playerCount;i++){
+    const cond={};
+    document.querySelectorAll(`select[data-p="${i}"]`).forEach(s=>cond[s.dataset.k]=s.value);
+    const name=document.querySelector(`input[data-name="${i}"]`).value||('P'+(i+1));
+    players.push({
+      id:i, name, cond,
+      tokens:startingTokens(cond),
+      bonus:{money:0,health:0,wellbeing:0,social:0,knowledge:0},
+      milestones:[], score:0,
+      color:['#e0b54e','#5aa56f','#5a83c4','#cf5b54'][i]
+    });
+  }
+  S=newState(players);
+  document.getElementById('setup').classList.add('hidden');
+  document.getElementById('game').classList.remove('hidden');
+  render();
+});
+
+/* =========================================================
+   RENDER
+   ========================================================= */
+const $=id=>document.getElementById(id);
+
+function stageOfRound(r){ return Math.min(3, Math.ceil(r/STAGE_LEN)); }
+function stageName(s){ return ['초년기','중년기','장년기'][s-1]; }
+
+function render(){
+  const cur=S.players[S.cur];
+  // topbar
+  const stage=stageOfRound(S.round);
+  $('stageLabel').childNodes[0].nodeValue=stageName(stage)+' ';
+  $('roundLabel').textContent=`Round ${S.round} / ${TOTAL_ROUNDS}`;
+  $('turnLabel').textContent=`${cur.name} 차례`;
+  $('turnDot').style.background=cur.color;
+  $('nextBtn').disabled=!S.acted;
+
+  // milestones
+  $('milestoneStrip').innerHTML='';
+  S.milestones.forEach(m=>$('milestoneStrip').appendChild(milestoneEl(m,cur)));
+
+  // tiers
+  for(let t=1;t<=3;t++){
+    const strip=$('tier'+t); strip.innerHTML='';
+    const stageActive = (t<=stage); // 지난 단계 카드는 진열 종료
+    const isClosed = (t<stage);
+    S.faceup[t].forEach((card,idx)=>{
+      if(card===null){ strip.appendChild(emptySlot(isClosed?'기회 종료':'')); return; }
+      strip.appendChild(scenarioEl(card,cur,isClosed));
+    });
+    $('deck'+t).textContent = isClosed ? '진열 종료' : `덱 ${S.decks[t].length}`;
+  }
+
+  // pool
+  const pool=$('pool'); pool.innerHTML='';
+  KEYS.forEach(k=>pool.appendChild(tokenEl(k)));
+
+  // players
+  const pc=$('players'); pc.innerHTML='';
+  S.players.forEach((p,i)=>pc.appendChild(playerEl(p,i===S.cur)));
+
+  // action button states
+  $('actTake').classList.toggle('active',S.mode==='take');
+  $('actRandom').classList.toggle('active',S.mode==='random');
+  const disableActs=S.acted;
+  $('actTake').disabled=disableActs;
+  $('actRandom').disabled=disableActs;
+  $('confirmRow').classList.toggle('hidden', S.mode!=='take');
+  if(!S.mode && !S.acted) $('hint').textContent='행동을 하나 선택하세요.';
+  if(S.acted) $('hint').textContent='이번 턴 행동 완료. “다음 차례”를 누르세요.';
+}
+
+function costEl(cost){
+  const wrap=document.createElement('div'); wrap.className='cost';
+  for(const k in cost){
+    const pip=document.createElement('span'); pip.className='pip';
+    pip.innerHTML=`<span class="dot" style="background:${ASSETS[k].color}"></span>${cost[k]}`;
+    wrap.appendChild(pip);
+  }
+  return wrap;
+}
+
+function scenarioEl(card,player,closed){
+  const el=document.createElement('div'); el.className='gcard';
+  const afford = canAffordScenario(player,card);
+  if(closed){ el.classList.add('locked'); }
+  else if(afford && !S.acted){ el.classList.add('affordable'); el.onclick=()=>buyScenario(card); }
+  else el.classList.add('locked');
+  el.innerHTML=`
+    <div class="bonus-badge" style="background:${ASSETS[card.bonus].color}" title="영구 보너스 +1 ${ASSETS[card.bonus].ko}"></div>
+    <div class="ttl">${card.name}</div>`;
+  el.appendChild(costEl(card.cost));
+  const b=document.createElement('div'); b.className='bonus';
+  b.innerHTML=`영구 +1 <span class="dot" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${ASSETS[card.bonus].color}"></span> ${ASSETS[card.bonus].ko}`;
+  el.appendChild(b);
+  return el;
+}
+
+function milestoneEl(m,player){
+  const el=document.createElement('div'); el.className='gcard';
+  const done = player.milestones.includes(m.id);
+  const afford = canAffordMilestone(player,m);
+  if(done){ el.classList.add('locked'); }
+  else if(afford && !S.acted){ el.classList.add('affordable'); el.onclick=()=>claimMilestone(m); }
+  else el.classList.add('locked');
+  el.innerHTML=`<div class="pts">${m.points}</div><div class="ttl">${m.name}${done?' ✓':''}</div>`;
+  el.appendChild(costEl(m.cost));
+  const note=document.createElement('div'); note.className='bonus';
+  note.textContent= done? '달성함' : '토큰 소비 → 점수';
+  el.appendChild(note);
+  return el;
+}
+
+function emptySlot(txt){
+  const el=document.createElement('div'); el.className='empty-slot'; el.textContent=txt||'';
+  return el;
+}
+
+function tokenEl(k){
+  const el=document.createElement('div'); el.className='token';
+  el.style.background=ASSETS[k].color;
+  const selCount=S.selection.filter(x=>x===k).length;
+  if(S.mode==='take'){
+    el.classList.add('pick');
+    if(S.pool[k]<=0) el.classList.add('dim');
+    if(selCount>0) el.classList.add('sel');
+    el.onclick=()=>pickToken(k);
+  }
+  el.innerHTML=`<span class="lab">${ASSETS[k].ko}</span><span class="cnt">${S.pool[k]}</span>`+
+    (selCount?`<span style="position:absolute;top:-7px;right:-7px;background:var(--gold);color:#221c0c;border-radius:50%;width:20px;height:20px;font-size:12px;display:flex;align-items:center;justify-content:center;font-weight:700">${selCount}</span>`:'');
+  return el;
+}
+
+function playerEl(p,isCur){
+  const el=document.createElement('div'); el.className='pl'+(isCur?' current':'');
+  const condStr=`${p.cond.econ}·${p.cond.sex}·장애:${p.cond.disability}·${p.cond.citizen}`;
+  let assets='';
+  KEYS.forEach(k=>{
+    assets+=`<span class="mini"><span class="dot" style="background:${ASSETS[k].color}"></span>${p.tokens[k]}${p.bonus[k]?`<span class="b">+${p.bonus[k]}</span>`:''}</span>`;
+  });
+  el.innerHTML=`
+    <div class="pl-top">
+      <span class="pl-name"><span class="turn-dot" style="background:${p.color}"></span>${p.name}</span>
+      <span class="pl-score">${p.score}</span>
+    </div>
+    <div class="conds">${condStr}</div>
+    <div class="assets">${assets}</div>
+    <div class="ms-line">Milestone ${p.milestones.length}개 달성</div>`;
+  return el;
+}
+
+/* =========================================================
+   규칙 / 행동
+   ========================================================= */
+// 시나리오: 보너스로 할인, 남는 비용을 실제 토큰으로 지불(풀로 반환)
+function canAffordScenario(p,card){
+  for(const k in card.cost){
+    const need=Math.max(0, card.cost[k]-p.bonus[k]);
+    if(p.tokens[k] < need) return false;
+  }
+  return true;
+}
+function buyScenario(card){
+  if(S.acted) return;
+  const p=S.players[S.cur];
+  if(!canAffordScenario(p,card)) return;
+  for(const k in card.cost){
+    const need=Math.max(0, card.cost[k]-p.bonus[k]);
+    p.tokens[k]-=need; S.pool[k]+=need;
+  }
+  p.bonus[card.bonus]+=1;
+  // 진열에서 제거 후 보충 (현재 단계면 보충, 지난 단계면 빈칸)
+  replaceCard(card);
+  S.acted=true; S.mode=null;
+  render();
+}
+function replaceCard(card){
+  const t=card.tier;
+  const idx=S.faceup[t].indexOf(card);
+  if(idx<0) return;
+  const stage=stageOfRound(S.round);
+  if(t<=stage && S.decks[t].length>0 && t>=stage){
+    S.faceup[t][idx]=S.decks[t].pop();
+  } else if(t<=stage && S.decks[t].length>0 && t<stage){
+    S.faceup[t][idx]=null; // 지난 단계는 보충 안 함
+  } else if(S.decks[t].length>0){
+    S.faceup[t][idx]=S.decks[t].pop();
+  } else {
+    S.faceup[t][idx]=null;
+  }
+}
+
+// 밀스톤: 보너스+토큰 합이 비용 이상이면 가능. 실제 토큰만 소비(풀 반환).
+function canAffordMilestone(p,m){
+  for(const k in m.cost){
+    if((p.tokens[k]+p.bonus[k]) < m.cost[k]) return false;
+  }
+  return true;
+}
+function claimMilestone(m){
+  if(S.acted) return;
+  const p=S.players[S.cur];
+  if(p.milestones.includes(m.id)) return;
+  if(!canAffordMilestone(p,m)) return;
+  for(const k in m.cost){
+    const fromTokens=Math.max(0, m.cost[k]-p.bonus[k]);
+    p.tokens[k]-=fromTokens; S.pool[k]+=fromTokens;
+  }
+  p.milestones.push(m.id);
+  p.score+=m.points;
+  S.acted=true; S.mode=null;
+  render();
+}
+
+// 토큰 받기
+$('actTake').onclick=()=>{ if(S.acted)return; S.mode='take'; S.selection=[]; $('hint').textContent='최대 3개(서로 다른 색) 또는 같은 색 2개를 고른 뒤 확정.'; render(); };
+$('actRandom').onclick=()=>{ if(S.acted)return; drawRandom(); };
+
+function pickToken(k){
+  if(S.pool[k]<=0) return;
+  const sel=S.selection;
+  const same=sel.filter(x=>x===k).length;
+  // 규칙: 총 3개까지 / 같은색은 2개까지(그 경우 그 색만)
+  if(sel.length>=3){ flashHint('최대 3개까지.'); return; }
+  if(same===1){
+    // 같은 색 두 번째 → 다른 색이 이미 있으면 불가, 풀에 4개 이상 있어야
+    if(sel.length>1){ flashHint('같은 색 2개는 단독으로만.'); return; }
+    if(S.pool[k]<4){ flashHint('같은 색 2개는 풀에 4개 이상일 때만.'); return; }
+  }
+  if(same>=2){ flashHint('같은 색은 2개까지.'); return; }
+  S.selection.push(k);
+  render();
+}
+let hintTimer=null;
+function flashHint(t){ $('hint').textContent=t; clearTimeout(hintTimer); hintTimer=setTimeout(()=>{ if(S.mode==='take')$('hint').textContent='최대 3개(서로 다른 색) 또는 같은 색 2개.'; },1500); }
+
+$('confirmGo').onclick=()=>{
+  if(S.selection.length===0){ flashHint('토큰을 선택하세요.'); return; }
+  const p=S.players[S.cur];
+  S.selection.forEach(k=>{ if(S.pool[k]>0){ S.pool[k]--; p.tokens[k]++; } });
+  S.selection=[]; S.mode=null; S.acted=true; render();
+};
+$('confirmCancel').onclick=()=>{ S.selection=[]; S.mode=null; render(); };
+
+// pool getter that ignores nothing (kept simple)
+
+/* random card */
+function drawRandom(){
+  const p=S.players[S.cur];
+  const card=S.randomDeck.length? S.randomDeck.pop() : makeRandomCard();
+  for(const k in card.effect){
+    p.tokens[k]=Math.max(0, p.tokens[k]+card.effect[k]);
+  }
+  // modal
+  $('rcName').textContent=card.name;
+  const eff=$('rcEff'); eff.innerHTML='';
+  for(const k in card.effect){
+    const v=card.effect[k]; const pos=v>0;
+    const pill=document.createElement('span');
+    pill.className='eff-pill '+(pos?'pos':'neg');
+    pill.innerHTML=`<span class="dot" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${ASSETS[k].color}"></span>${ASSETS[k].ko} ${pos?'+':''}${v}`;
+    eff.appendChild(pill);
+  }
+  $('randomModal').classList.remove('hidden');
+  S.acted=true; S.mode=null;
+}
+$('rcClose').onclick=()=>{ $('randomModal').classList.add('hidden'); render(); };
+
+/* =========================================================
+   턴 진행
+   ========================================================= */
+$('nextBtn').onclick=()=>{
+  if(!S.acted) return;
+  S.acted=false; S.mode=null; S.selection=[];
+  S.cur++;
+  if(S.cur>=S.players.length){
+    S.cur=0;
+    const prevStage=stageOfRound(S.round);
+    S.round++;
+    if(S.round>TOTAL_ROUNDS){ endGame(); return; }
+    const newStage=stageOfRound(S.round);
+    if(newStage>prevStage){
+      // 지난 단계 진열을 빈칸 처리
+      for(let t=1;t<newStage;t++){ S.faceup[t]=S.faceup[t].map(()=>null); }
+    }
+  }
+  render();
+};
+
+/* =========================================================
+   종료 / 결과
+   ========================================================= */
+function endGame(){
+  const byScore=[...S.players].sort((a,b)=>b.score-a.score);
+  const byWell=[...S.players].sort((a,b)=>(b.tokens.wellbeing+b.bonus.wellbeing)-(a.tokens.wellbeing+a.bonus.wellbeing));
+  const sEl=$('resScore'); sEl.innerHTML='';
+  byScore.forEach((p,i)=>sEl.appendChild(resRow(i+1,p.name,p.score+'점',p.color)));
+  const wEl=$('resWell'); wEl.innerHTML='';
+  byWell.forEach((p,i)=>wEl.appendChild(resRow(i+1,p.name,(p.tokens.wellbeing+p.bonus.wellbeing)+'',p.color)));
+
+  const winner=byScore[0], wellTop=byWell[0];
+  let irony;
+  if(winner.id!==wellTop.id){
+    irony=`공식 승자는 ${winner.name}이지만, 가장 잘 산(Well-being 최고) 사람은 ${wellTop.name}입니다. 게임은 Milestone만 점수로 셌고, 아무도 웰빙으로는 이기지 못했습니다. — “우리가 좇아야 했던 건 무엇이었을까?”`;
+  } else {
+    irony=`이번엔 승자와 Well-being 1위가 같았습니다. 하지만 디브리핑 질문은 같습니다 — 모두가 같은 출발선에서 이 Milestone들에 도달할 기회를 가졌나요?`;
+  }
+  $('ironyText').textContent=irony;
+  $('resultModal').classList.remove('hidden');
+}
+function resRow(rank,name,val,color){
+  const el=document.createElement('div'); el.className='res-row';
+  el.innerHTML=`<span class="rk">${rank}</span><span class="nm"><span class="turn-dot" style="display:inline-block;background:${color};margin-right:6px"></span>${name}</span><span class="vl">${val}</span>`;
+  return el;
+}
+$('restartBtn').onclick=()=>location.reload();
+
+</script>
+</body>
+</html>
